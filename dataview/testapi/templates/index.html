@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/css/test.css" />
+    <link rel="stylesheet" href="/static/css/bootstrap.css" />
+    <link rel="stylesheet" href="/static/css/dataTables.bootstrap.css" />
+    <title></title>
+</head>
+
+<body>
+    <div class="containter">
+    	 <form type="get" action="">
+         <input type="text" name="q">
+         <button type="submit">Search</button>
+     </form>
+
+     <p>Your query "{{ search_query }} has returned {{ samples.count }} result{{ samples|pluralize }}"</p>
+
+     {% for sample in samples %}
+     <h1>{{ sample.object.id }}</h1>
+     <p>
+         {{ sample.object.name }}
+     </p>
+     {% endfor %}
+    </div>
+    <div class="container">
+        <table id="test-table" class="table table-bordered table-hover">
+            <thead>
+            <tr>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+        </tr>
+                <tr>
+                    <th>Company</th>
+                    <th>email</th>
+                    <th>name</th>
+                    <th>phonenumber</th>
+                </tr>
+
+            </thead>
+            <tfoot>
+        
+    </tfoot>
+            <tbody>
+            </tbody>
+        </table>
+
+    </div>
+    <script src="/static/js/jquery-1.10.2.js" type="text/javascript"></script>
+    <script src="/static/js/bootstrap.js" type="text/javascript"></script>
+    <script src="/static/js/datatables/jquery.dataTables.js" type="text/javascript"></script>
+    <script src="/static/js/datatables/dataTables.bootstrap.js" type="text/javascript"></script>
+    <script src="/static/js/datatables/jquery.dataTables.columnFilter.js" type="text/javascript"></script>
+
+    <script>
+    $(document).ready(function() {
+        $.getJSON('http://127.0.0.1:8000/api/sample/?format=json', {}, function(json, textStatus) {
+            console.log(json);
+        });
+
+
+        sampelt_data_view = $('#test-table').dataTable({
+            bProcessing: true,
+            bServerSide: true,
+            bFilter: true,
+            sAjaxSource: "api/sample/?format=json",
+            sAjaxDataProp: "objects",
+            aoColumns: [ {
+                mData: 'company',
+                "mRender": function(data, type, full) {
+                    return "<a href=" + full.resource_uri + ">" + data + "</a>";
+                }
+            }, {
+                mData: 'email',
+            }, {
+                mData: 'name',
+            }, {
+                mData: 'phonenumber',
+                "bSortable": false
+            }, ],
+            fnServerData: function(source, oaData, callback, settings) {
+            	sorting_field_array = ['id','company','email']
+                oaData.push({
+                    name: 'limit',
+                    value: settings._iDisplayLength
+                });
+                oaData.push({
+                    name: 'offset',
+                    value: settings._iDisplayStart
+                });
+                console.log(settings);
+               	if (settings.aaSorting.length > 0) {
+               		sorting_string = '';
+               		$.each(settings.aaSorting, function(index, val) {
+               			console.log(sorting_field_array[val[0]]);
+               			sorting_sting = (val[1] == 'desc' ? "-":"") + sorting_field_array[val[0]]
+               		});
+               		oaData.push({
+               			name:'order_by',
+               			value: sorting_sting
+               		})
+               	}
+                settings.jqXHR = $.get(
+                    source,
+                    oaData,
+                    function(data) {
+                        data.sEcho = oaData.sEcho;
+                        data.iTotalRecords = data.meta.total_count;
+                        data.iTotalDisplayRecords = data.meta.total_count;
+                        callback(data);
+                    },
+                    'json'
+                )
+            },
+        }).columnFilter({
+        	sPlaceHolder: "head:after"
+        });
+    });
+    </script>
+</body>
+
+</html>

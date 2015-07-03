@@ -1,0 +1,7 @@
+{{object.company}}
+{{object.name}}
+{{object.email}}
+{% for sample1 in object.samples.all %}
+{{sample1.text}}
+{% endfor %}
+
